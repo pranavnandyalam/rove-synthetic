@@ -82,7 +82,7 @@ def simplify_offers(offers_data: dict) -> list:
     Takes full Amadeus offers JSON and returns simplified list with:
     - flight_code (e.g., AA123)
     - airline_code (e.g., AA)
-    - price (e.g., 350.00 USD)
+    - price (e.g., 350.00 US
     - departure/arrival airports
     - departure/arrival times (date + time)
     """
@@ -146,7 +146,8 @@ def simplify_data(simplified_offers: list) -> str:
             final += f"    Flight Code: {flight.get('flight_code')}\n"
             final += f"    Airline Code: {flight.get('airline_code')}\n"
             final += f"    Departure: {iso_to_readable(flight.get('departure_time'))} from {flight.get('departure_airport')}\n"
-            final += f"    Arrival:   {iso_to_readable(flight.get('arrival_time'))} at {flight.get('arrival_airport')}\n\n"
+            final += f"    Arrival:   {iso_to_readable(flight.get('arrival_time'))} at {flight.get('arrival_airport')}\n"
+            final += f"    Price:     {flight.get('price')}\n\n"
 
         route_num += 1
 

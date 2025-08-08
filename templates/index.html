@@ -1,0 +1,58 @@
+{% extends "layout.html" %}
+{% block content %}
+<h2>Redemption Optimizer</h2>
+<form method="post" action="/recommend">
+  <label>Origin (IATA): <input name="origin" value="{{ origin or '' }}" required /></label>
+  <label>Destination (IATA): <input name="destination" value="{{ destination or '' }}" required /></label>
+  <label>Departure date (YYYY-MM-DD): <input name="departure_date" value="{{ departure_date or '' }}" required /></label>
+  <label>Miles available: <input name="miles_available" type="number" min="0" value="{{ miles_available or 0 }}" required /></label>
+  <button type="submit">Get Recommendations</button>
+</form>
+
+{% if not results and examples %}
+  <h3>Example Value Per Mile</h3>
+  <ul>
+    <li><strong>Flight</strong>: {{ examples.flight.value_per_mile_cents }}¢/mi; miles needed ~ {{ examples.flight.miles_needed }} for ${{ examples.flight.cash_price_usd }} (taxes ${{ examples.flight.taxes_fees_usd }})</li>
+    <li><strong>Hotel</strong>: {{ examples.hotel.value_per_mile_cents }}¢/pt; miles needed ~ {{ examples.hotel.miles_needed }} for ${{ examples.hotel.cash_price_usd }}</li>
+    <li><strong>Gift card</strong>: {{ examples.gift_card.value_per_mile_cents }}¢/pt; miles needed ~ {{ examples.gift_card.miles_needed }} for ${{ examples.gift_card.cash_price_usd }}</li>
+  </ul>
+{% endif %}
+
+{% if results %}
+  <h3>Top Recommendations</h3>
+  <div>
+    {% for item in results.recommendations %}
+      <div class="card">
+        <div><strong>Type:</strong> {{ item.type }}</div>
+        {% if item.type == "flight_award" %}
+          <div><strong>Direct:</strong> <span class="{{ 'direct' if item.direct else 'connect' }}">{{ 'Yes' if item.direct else 'No' }}</span></div>
+          <div><strong>Cash price:</strong> {{ item.price_total }} {{ item.currency }}</div>
+          <div><strong>Estimated miles needed:</strong> {{ item.estimated_miles_needed }}</div>
+          <div><strong>Value per mile:</strong> {{ item.value_per_mile_cents }}¢</div>
+        {% elif item.type.startswith("hotel_award") %}
+          <div><strong>Hotel cash price:</strong> ${{ item.cash_price_usd }}</div>
+          <div><strong>Miles needed:</strong> {{ item.miles_needed }}</div>
+          <div><strong>Value per mile:</strong> {{ item.value_per_mile_cents }}¢</div>
+        {% elif item.type == "gift_card" %}
+          <div><strong>Gift card cash value from your miles:</strong> ${{ item.cash_value_usd }}</div>
+          <div><strong>Value per mile:</strong> {{ item.value_per_mile_cents }}¢</div>
+        {% endif %}
+      </div>
+    {% endfor %}
+  </div>
+
+  <h4>Assumptions</h4>
+  <pre><code>{{ results.assumptions | tojson(indent=2) }}</code></pre>
+
+  <h3>Leave Feedback</h3>
+  <form method="post" action="/feedback">
+    <input type="hidden" name="origin" value="{{ origin }}">
+    <input type="hidden" name="destination" value="{{ destination }}">
+    <input type="hidden" name="departure_date" value="{{ departure_date }}">
+    <input type="hidden" name="miles_available" value="{{ miles_available }}">
+    <label>Rating (1-5): <input name="rating" type="number" min="1" max="5" required /></label>
+    <label>Comments: <textarea name="comments" rows="3" placeholder="What worked? What didn't?"></textarea></label>
+    <button type="submit">Submit feedback</button>
+  </form>
+{% endif %}
+{% endblock %} 

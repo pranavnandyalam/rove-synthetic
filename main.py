@@ -20,5 +20,3 @@ for route in routes:
         offers = simplify_offers(search_flights(route[0], route[1], f"2025-09-{day}", 1, 5))
 
         # save_flights_to_db(offers, routes[3])
-
-
