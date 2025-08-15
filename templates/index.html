@@ -1,58 +1,151 @@
 {% extends "layout.html" %}
 {% block content %}
-<h2>Redemption Optimizer</h2>
-<form method="post" action="/recommend">
-  <label>Origin (IATA): <input name="origin" value="{{ origin or '' }}" required /></label>
-  <label>Destination (IATA): <input name="destination" value="{{ destination or '' }}" required /></label>
-  <label>Departure date (YYYY-MM-DD): <input name="departure_date" value="{{ departure_date or '' }}" required /></label>
-  <label>Miles available: <input name="miles_available" type="number" min="0" value="{{ miles_available or 0 }}" required /></label>
-  <button type="submit">Get Recommendations</button>
-</form>
+  <section class="mb-8">
+    <h1 class="text-2xl md:text-3xl font-semibold tracking-tight text-slate-900">Redemption Optimizer</h1>
+    <p class="mt-2 text-slate-600">Enter your trip details and miles. We will estimate value-per-mile and rank the best options.</p>
+  </section>
 
-{% if not results and examples %}
-  <h3>Example Value Per Mile</h3>
-  <ul>
-    <li><strong>Flight</strong>: {{ examples.flight.value_per_mile_cents }}¢/mi; miles needed ~ {{ examples.flight.miles_needed }} for ${{ examples.flight.cash_price_usd }} (taxes ${{ examples.flight.taxes_fees_usd }})</li>
-    <li><strong>Hotel</strong>: {{ examples.hotel.value_per_mile_cents }}¢/pt; miles needed ~ {{ examples.hotel.miles_needed }} for ${{ examples.hotel.cash_price_usd }}</li>
-    <li><strong>Gift card</strong>: {{ examples.gift_card.value_per_mile_cents }}¢/pt; miles needed ~ {{ examples.gift_card.miles_needed }} for ${{ examples.gift_card.cash_price_usd }}</li>
-  </ul>
-{% endif %}
-
-{% if results %}
-  <h3>Top Recommendations</h3>
-  <div>
-    {% for item in results.recommendations %}
-      <div class="card">
-        <div><strong>Type:</strong> {{ item.type }}</div>
-        {% if item.type == "flight_award" %}
-          <div><strong>Direct:</strong> <span class="{{ 'direct' if item.direct else 'connect' }}">{{ 'Yes' if item.direct else 'No' }}</span></div>
-          <div><strong>Cash price:</strong> {{ item.price_total }} {{ item.currency }}</div>
-          <div><strong>Estimated miles needed:</strong> {{ item.estimated_miles_needed }}</div>
-          <div><strong>Value per mile:</strong> {{ item.value_per_mile_cents }}¢</div>
-        {% elif item.type.startswith("hotel_award") %}
-          <div><strong>Hotel cash price:</strong> ${{ item.cash_price_usd }}</div>
-          <div><strong>Miles needed:</strong> {{ item.miles_needed }}</div>
-          <div><strong>Value per mile:</strong> {{ item.value_per_mile_cents }}¢</div>
-        {% elif item.type == "gift_card" %}
-          <div><strong>Gift card cash value from your miles:</strong> ${{ item.cash_value_usd }}</div>
-          <div><strong>Value per mile:</strong> {{ item.value_per_mile_cents }}¢</div>
-        {% endif %}
+  <section class="grid md:grid-cols-3 gap-6 items-start">
+    <form method="post" action="/recommend" class="md:col-span-2 bg-white/80 backdrop-blur rounded-xl border border-slate-200 shadow-sm p-5" onsubmit="this.querySelector('button[type=submit]').disabled=true;this.querySelector('button[type=submit]').innerHTML='Finding best options…';">
+      <div class="grid sm:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-medium text-slate-700">Origin (IATA)</label>
+          <input name="origin" value="{{ origin or '' }}" required placeholder="e.g., JFK" class="mt-1 w-full rounded-lg border-slate-300 focus:border-blue-500 focus:ring-blue-500" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-slate-700">Destination (IATA)</label>
+          <input name="destination" value="{{ destination or '' }}" required placeholder="e.g., LAX" class="mt-1 w-full rounded-lg border-slate-300 focus:border-blue-500 focus:ring-blue-500" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-slate-700">Departure date</label>
+          <input name="departure_date" value="{{ departure_date or '' }}" required placeholder="YYYY-MM-DD" class="mt-1 w-full rounded-lg border-slate-300 focus:border-blue-500 focus:ring-blue-500" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-slate-700">Miles available</label>
+          <input name="miles_available" type="number" min="0" value="{{ miles_available or 0 }}" required class="mt-1 w-full rounded-lg border-slate-300 focus:border-blue-500 focus:ring-blue-500" />
+        </div>
       </div>
-    {% endfor %}
-  </div>
+      <div class="mt-5 flex items-center justify-between gap-3">
+        <div class="text-xs text-slate-500">Tip: Use valid IATA codes, e.g., <span class="font-medium text-slate-700">JFK</span>, <span class="font-medium text-slate-700">SFO</span>, <span class="font-medium text-slate-700">LAX</span>.</div>
+        <button type="submit" class="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-white font-medium shadow hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
+          Get recommendations
+        </button>
+      </div>
+    </form>
 
-  <h4>Assumptions</h4>
-  <pre><code>{{ results.assumptions | tojson(indent=2) }}</code></pre>
+    <div class="bg-white/80 backdrop-blur rounded-xl border border-slate-200 shadow-sm p-5">
+      <h3 class="text-base font-semibold text-slate-900">How values compare</h3>
+      <p class="mt-1 text-sm text-slate-600">Typical value-per-mile/point used for estimates:</p>
+      <ul class="mt-3 space-y-2 text-sm">
+        <li class="flex items-center justify-between"><span>Flight awards</span><span class="font-medium text-slate-900">~1.3¢/mi</span></li>
+        <li class="flex items-center justify-between"><span>Hotel awards</span><span class="font-medium text-slate-900">~0.7¢/pt</span></li>
+        <li class="flex items-center justify-between"><span>Gift cards</span><span class="font-medium text-slate-900">~0.5¢/pt</span></li>
+      </ul>
+      {% if not results and examples %}
+        <div class="mt-4 rounded-lg bg-slate-50 border border-slate-200 p-3">
+          <p class="text-xs font-medium text-slate-700 mb-2">Example calculations</p>
+          <ul class="space-y-1 text-xs text-slate-600">
+            <li>Flight: {{ examples.flight.value_per_mile_cents }}¢/mi · ~{{ examples.flight.miles_needed }} miles for ${{ examples.flight.cash_price_usd }} (taxes ${{ examples.flight.taxes_fees_usd }})</li>
+            <li>Hotel: {{ examples.hotel.value_per_mile_cents }}¢/pt · ~{{ examples.hotel.miles_needed }} points for ${{ examples.hotel.cash_price_usd }}</li>
+            <li>Gift card: {{ examples.gift_card.value_per_mile_cents }}¢/pt · ~{{ examples.gift_card.miles_needed }} points for ${{ examples.gift_card.cash_price_usd }}</li>
+          </ul>
+        </div>
+      {% endif %}
+    </div>
+  </section>
 
-  <h3>Leave Feedback</h3>
-  <form method="post" action="/feedback">
-    <input type="hidden" name="origin" value="{{ origin }}">
-    <input type="hidden" name="destination" value="{{ destination }}">
-    <input type="hidden" name="departure_date" value="{{ departure_date }}">
-    <input type="hidden" name="miles_available" value="{{ miles_available }}">
-    <label>Rating (1-5): <input name="rating" type="number" min="1" max="5" required /></label>
-    <label>Comments: <textarea name="comments" rows="3" placeholder="What worked? What didn't?"></textarea></label>
-    <button type="submit">Submit feedback</button>
-  </form>
-{% endif %}
+  {% if results %}
+    <section class="mt-8">
+      <div class="flex items-end justify-between gap-3">
+        <div>
+          <h2 class="text-xl font-semibold text-slate-900">Top recommendations</h2>
+          <p class="text-sm text-slate-600">Ranked by estimated value-per-mile.</p>
+        </div>
+        <details class="text-sm text-slate-600">
+          <summary class="cursor-pointer select-none">Assumptions</summary>
+          <pre class="mt-2 bg-slate-50 p-3 rounded border border-slate-200 overflow-auto"><code>{{ results.assumptions | tojson(indent=2) }}</code></pre>
+        </details>
+      </div>
+
+      <div class="mt-4 grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        {% for item in results.recommendations %}
+          <div class="rounded-xl border border-slate-200 bg-white shadow-sm p-4">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-xs font-semibold px-2 py-1 rounded-full {{ 'bg-blue-50 text-blue-700' if item.type == 'flight_award' else ('bg-emerald-50 text-emerald-700' if item.type.startswith('hotel_award') else 'bg-amber-50 text-amber-800') }}">{{ item.type.replace('_', ' ') }}</span>
+              {% if item.type == 'flight_award' %}
+                <span class="text-xs px-2 py-1 rounded-full {{ 'bg-emerald-50 text-emerald-700' if item.direct else 'bg-fuchsia-50 text-fuchsia-700' }}">{{ 'Direct' if item.direct else 'Connecting' }}</span>
+              {% endif %}
+            </div>
+
+            {% if item.type == 'flight_award' %}
+              <div class="text-sm text-slate-700">
+                <div class="font-medium text-slate-900">${{ '%.2f'|format(item.price_total) }} {{ item.currency }}</div>
+                <div class="mt-1">Estimated miles needed: <span class="font-medium">{{ item.estimated_miles_needed }}</span></div>
+                <div>Value per mile: <span class="font-medium">{{ item.value_per_mile_cents }}¢</span></div>
+              </div>
+              {% if item.segments and item.segments|length > 0 %}
+                <div class="mt-3 border-t border-slate-200 pt-3">
+                  <p class="text-xs font-medium text-slate-600 mb-2">Segments</p>
+                  <ol class="space-y-1 text-xs text-slate-600">
+                    {% for seg in item.segments %}
+                      <li class="flex items-center justify-between gap-2">
+                        <span class="font-medium text-slate-700">{{ seg.carrierCode }}{{ seg.number }}</span>
+                        <span>{{ seg.departure.iataCode }} → {{ seg.arrival.iataCode }}</span>
+                      </li>
+                    {% endfor %}
+                  </ol>
+                </div>
+              {% endif %}
+            {% elif item.type.startswith('hotel_award') %}
+              <div class="text-sm text-slate-700">
+                <div class="font-medium text-slate-900">Hotel cash price: ${{ item.cash_price_usd }}</div>
+                <div class="mt-1">Miles needed: <span class="font-medium">{{ item.miles_needed }}</span></div>
+                <div>Value per mile: <span class="font-medium">{{ item.value_per_mile_cents }}¢</span></div>
+              </div>
+            {% elif item.type == 'gift_card' %}
+              <div class="text-sm text-slate-700">
+                <div class="font-medium text-slate-900">Cash value from your miles: ${{ item.cash_value_usd }}</div>
+                <div>Value per mile: <span class="font-medium">{{ item.value_per_mile_cents }}¢</span></div>
+              </div>
+            {% endif %}
+          </div>
+        {% endfor %}
+      </div>
+    </section>
+
+    <section class="mt-10">
+      <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
+        <h3 class="text-base font-semibold text-slate-900 mb-2">Leave feedback</h3>
+        <form method="post" action="/feedback" class="grid sm:grid-cols-2 gap-4">
+          <input type="hidden" name="origin" value="{{ origin }}">
+          <input type="hidden" name="destination" value="{{ destination }}">
+          <input type="hidden" name="departure_date" value="{{ departure_date }}">
+          <input type="hidden" name="miles_available" value="{{ miles_available }}">
+
+          <div class="sm:col-span-2">
+            <label class="block text-sm font-medium text-slate-700">Rating</label>
+            <div class="mt-1 flex items-center gap-3">
+              {% for i in range(1,6) %}
+                <label class="inline-flex items-center gap-2">
+                  <input type="radio" name="rating" value="{{ i }}" required class="text-amber-500 focus:ring-amber-500">
+                  <span class="text-sm">{{ i }}</span>
+                </label>
+              {% endfor %}
+            </div>
+          </div>
+
+          <div class="sm:col-span-2">
+            <label class="block text-sm font-medium text-slate-700">Comments</label>
+            <textarea name="comments" rows="3" placeholder="What worked? What can be improved?" class="mt-1 w-full rounded-lg border-slate-300 focus:border-blue-500 focus:ring-blue-500"></textarea>
+          </div>
+
+          <div class="sm:col-span-2 flex items-center justify-end">
+            <button class="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2.5 text-white font-medium shadow hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+              Submit feedback
+            </button>
+          </div>
+        </form>
+      </div>
+    </section>
+  {% endif %}
 {% endblock %} 

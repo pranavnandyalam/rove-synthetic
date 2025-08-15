@@ -2,28 +2,54 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>Rove Synthetic</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <link rel="stylesheet" href="https://unpkg.com/sakura.css/css/sakura.css">
+  <meta name="theme-color" content="#111827" />
+  <title>Rove Synthetic · Redemption Optimizer</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: { extend: { fontFamily: { sans: ['Inter', 'ui-sans-serif', 'system-ui'] } } }
+    }
+  </script>
   <style>
-    code { background: #f6f8fa; padding: 0.1rem 0.25rem; }
-    .direct { color: #1b5e20; font-weight: 600; }
-    .connect { color: #6a1b9a; font-weight: 600; }
-    .card { border: 1px solid #ddd; padding: 12px; margin: 8px 0; border-radius: 6px; }
+    .gradient-bg { background: radial-gradient(1200px 600px at 10% 10%, rgba(59,130,246,.15), transparent 40%), radial-gradient(800px 400px at 90% 10%, rgba(16,185,129,.12), transparent 40%), radial-gradient(900px 400px at 50% 100%, rgba(236,72,153,.10), transparent 40%); }
   </style>
 </head>
-<body>
-  <main class="container">
-    {% with messages = get_flashed_messages() %}
-      {% if messages %}
-        <ul>
-          {% for message in messages %}
-            <li>{{ message }}</li>
-          {% endfor %}
-        </ul>
-      {% endif %}
-    {% endwith %}
-    {% block content %}{% endblock %}
-  </main>
+<body class="min-h-screen bg-slate-50 text-slate-900">
+  <div class="gradient-bg">
+    <header class="border-b border-slate-200 bg-white/70 backdrop-blur">
+      <div class="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
+        <a href="/" class="flex items-center gap-2 font-semibold text-slate-800">
+          <span class="inline-flex h-7 w-7 items-center justify-center rounded-md bg-blue-600 text-white">R</span>
+          <span>Rove Synthetic</span>
+        </a>
+        <nav class="text-sm text-slate-600">
+          <a href="https://github.com" target="_blank" class="hover:text-slate-900">GitHub</a>
+        </nav>
+      </div>
+    </header>
+
+    <main class="max-w-5xl mx-auto px-4 py-8">
+      {% with messages = get_flashed_messages() %}
+        {% if messages %}
+          <div class="mb-4 rounded-lg border border-emerald-200 bg-emerald-50 text-emerald-900 px-4 py-3 text-sm shadow-sm">
+            {% for message in messages %}
+              <div>{{ message }}</div>
+            {% endfor %}
+          </div>
+        {% endif %}
+      {% endwith %}
+      {% block content %}{% endblock %}
+    </main>
+
+    <footer class="border-t border-slate-200 bg-white/60 backdrop-blur">
+      <div class="max-w-5xl mx-auto px-4 py-6 text-sm text-slate-500">
+        <p>Built for estimating value-per-mile and smarter redemptions. Mock data used when API credentials are missing.</p>
+      </div>
+    </footer>
+  </div>
 </body>
 </html> 
